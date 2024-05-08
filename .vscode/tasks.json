@@ -1,0 +1,49 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "cmake",
+            "args": [ "." ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Running CMake"
+        },
+        {
+            "label": "make",
+            "type": "shell",
+            "command": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Running Make with -fpermissive"
+        },
+        {
+            "label": "build-and-make",
+            "dependsOrder": "sequence",
+            "dependsOn": ["build", "make"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Build and Make Sequence"
+        },
+        {
+            "label": "Run RunnerEngineServer",
+            "type": "shell",
+            "command": "./RunnerEngineServer",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+        }
+    ]
+}
