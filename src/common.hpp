@@ -23,6 +23,7 @@ extern "C"
 
 #define WINDOW_HEIGHT 800
 #define WINDOW_WIDTH 800
+#define MAX_PACKET_SIZE 1400
 
 struct UDPHeader {
     uint32_t frameNumber;    

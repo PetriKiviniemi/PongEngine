@@ -19,8 +19,6 @@
 #include <filesystem>
 #include <common.hpp>
 
-//Custom min function for linux
-#define MAX_PACKET_SIZE 1400
 
 //Just a singleton wrapper for the UDPSend6 files
 class PongEngineUDPServer{
