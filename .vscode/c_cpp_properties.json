@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/home/kiviniemi/repos/raylib/",
-                "/home/kiviniemi/repos/raylib/src"
+                "/home/kiviniemi/repos/raylib/src",
+                "/home/kiviniemi/repos/ffmpeg"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

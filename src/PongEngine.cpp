@@ -8,9 +8,10 @@
 #include <string>
 #include <vector>
 #include <random>
+#include <FrameEncoder.hpp>
+#include <GL/gl.h>
+#include <common.hpp>
 
-#define WINDOW_HEIGHT 800
-#define WINDOW_WIDTH 800
 #define MAX_SCORE 1
 
 typedef struct Pad{
@@ -26,7 +27,6 @@ typedef struct Ball{
     Vector2 dir;
     float vel;
 };
-
 
 bool checkCollision(Pad &player, Ball &ball)
 {
@@ -112,6 +112,10 @@ int main()
     std::vector<std::string> menuElements{"Start", "Quit"};
     int selectedMenuElemIdx = 0;
 
+    FrameEncoder* frameEncoder = FrameEncoder::GetInstance();
+    RenderTexture2D target = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
+    RenderTexture2D offscreenTarget = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
+
     while(WindowShouldClose() == false)
     {
         if(playerScore == MAX_SCORE || computerScore == MAX_SCORE)
@@ -147,7 +151,7 @@ int main()
 
                 if(menuElements[selectedMenuElemIdx] == "Quit")
                 {
-                    CloseWindow();
+                    break;
                 }
 
             }
@@ -172,7 +176,7 @@ int main()
 
             if(IsKeyPressed(KEY_ESCAPE))
             {
-                CloseWindow();
+                break;
             }
 
             //Update positions
@@ -234,6 +238,11 @@ int main()
         }
 
         //Draw stuff 
+        //First draw everything onto a texture, then draw the texture onto screen
+        //Since that's the only way to access the raw pixel data
+
+        //TODO:: We have to draw another texture but flipped
+        BeginTextureMode(target);
         BeginDrawing();
         ClearBackground(BLACK);
 
@@ -268,13 +277,52 @@ int main()
         else if (state == GAMEOVER)
         {
             std::string gameOverText = "GameOver! Winner: ";
-            gameOverText += playerScore == 10 ? "Player" : "Computer";
+            gameOverText += playerScore == MAX_SCORE ? "Player" : "Computer";
             gameOverText += "\n Press ENTER to continue";
             DrawText(gameOverText.c_str(), 180, 400, 32, WHITE);
         }
+
+        //Send the Image data to the encoder
+        EndTextureMode();
+        int posX = (WINDOW_WIDTH - target.texture.width) / 2;
+        int posY = (WINDOW_HEIGHT - target.texture.height) / 2;
+
+        DrawTexturePro(target.texture,
+                       (Rectangle){0, 0, target.texture.width, target.texture.height}, // Source rectangle (flip vertically)
+                       (Rectangle){posX, posY, target.texture.width, target.texture.height}, // Destination rectangle
+                       Vector2Zero(),
+                       0.0f,
+                       WHITE);
+
+        //Get the raw pixel data and send it to our encoder
+        unsigned int textureID = target.texture.id;
+        uint32_t textureSize =  target.texture.width * target.texture.height * 4; //RGBA
+        uint8_t *pixelData = new uint8_t[textureSize];
+
+        // Using raw OpenGL functions to bind the texture 
+        // and get the pixel data out of it
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelData);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        //NOTE:: REMEMBER TO FREE THE PIXELDATA IN THE FrameEncoder
+        frameEncoder->encodeAndAddToQueue(pixelData, textureSize);
+
+        DrawTexturePro(target.texture,
+                       (Rectangle){0, 0, target.texture.width, -target.texture.height}, // Source rectangle (flip vertically)
+                       (Rectangle){posX, posY, target.texture.width, target.texture.height}, // Destination rectangle
+                       Vector2Zero(),
+                       0.0f,
+                       WHITE);
+
         EndDrawing();
+
     }
 
+    frameEncoder->cleanUp();
+    UnloadRenderTexture(target);
+    UnloadRenderTexture(offscreenTarget);
     CloseWindow();
     return 0;
 }
