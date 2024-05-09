@@ -17,7 +17,14 @@ include_directories(
 )
 
 #Executable
-add_executable(PongEngine src/PongEngine.cpp src/FrameEncoder.cpp)
+add_executable(
+    PongEngine 
+    src/PongEngine.cpp 
+    src/FrameEncoder.cpp 
+    src/common.cpp 
+    src/PongEngineServer.cpp
+    src/UDPSend6.cpp
+)
  
 #Link stuff
 link_directories(${FFMPEG_INSTALL_DIR}/lib)

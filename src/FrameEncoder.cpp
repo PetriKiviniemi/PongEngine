@@ -1,4 +1,5 @@
 #include <FrameEncoder.hpp>
+#include "PongEngineServer.hpp"
 
 FrameEncoder* FrameEncoder::pinstance_{nullptr};
 std::mutex FrameEncoder::mutex_;
@@ -54,7 +55,6 @@ void FrameEncoder::cleanUp()
     avformat_free_context(encoder->video_format_ctx);
     printf("Done\n");
 }
-
 
 FrameData* FrameEncoder::getFrameFromQueue()
 {
@@ -243,8 +243,10 @@ void FrameEncoder::encodeFrame(FrameData* frameData)
         pkt->stream_index = encoder->video_stream->index;
         av_packet_rescale_ts(pkt, encoder->video_codec_context->time_base, encoder->video_stream->time_base);
 
-        int write_ret = av_interleaved_write_frame(encoder->video_format_ctx, pkt);
-        if (write_ret < 0) { std::cerr << "Error: failed to write a frame! " << write_ret << std::endl; }
+        // TODO:: We could maybe add the packets into a queue
+        // And we could poll the queue with our udp server
+        // But for now, sending the packets straight away seems more efficient
+        PongEngineUDPServer::GetInstance()->fragmentAndSendPacket(pkt, frameData->frame_index);
 
         av_packet_unref(pkt);
     }

@@ -114,7 +114,6 @@ int main()
 
     FrameEncoder* frameEncoder = FrameEncoder::GetInstance();
     RenderTexture2D target = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
-    RenderTexture2D offscreenTarget = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     while(WindowShouldClose() == false)
     {
@@ -288,7 +287,7 @@ int main()
         int posY = (WINDOW_HEIGHT - target.texture.height) / 2;
 
         DrawTexturePro(target.texture,
-                       (Rectangle){0, 0, target.texture.width, target.texture.height}, // Source rectangle (flip vertically)
+                       (Rectangle){0, 0, target.texture.width, -target.texture.height}, // Source rectangle (flip vertically)
                        (Rectangle){posX, posY, target.texture.width, target.texture.height}, // Destination rectangle
                        Vector2Zero(),
                        0.0f,
@@ -306,15 +305,10 @@ int main()
         glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelData);
         glBindTexture(GL_TEXTURE_2D, 0);
 
+        flipPixelsVertically(pixelData, WINDOW_WIDTH, WINDOW_HEIGHT);
+
         //NOTE:: REMEMBER TO FREE THE PIXELDATA IN THE FrameEncoder
         frameEncoder->encodeAndAddToQueue(pixelData, textureSize);
-
-        DrawTexturePro(target.texture,
-                       (Rectangle){0, 0, target.texture.width, -target.texture.height}, // Source rectangle (flip vertically)
-                       (Rectangle){posX, posY, target.texture.width, target.texture.height}, // Destination rectangle
-                       Vector2Zero(),
-                       0.0f,
-                       WHITE);
 
         EndDrawing();
 
@@ -322,7 +316,6 @@ int main()
 
     frameEncoder->cleanUp();
     UnloadRenderTexture(target);
-    UnloadRenderTexture(offscreenTarget);
     CloseWindow();
     return 0;
 }
