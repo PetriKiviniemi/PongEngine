@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <vector>
 
 extern "C"
 {
@@ -14,6 +15,7 @@ extern "C"
 #include <libavutil/timestamp.h>
 #include <libavutil/channel_layout.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/avutil.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -38,6 +40,24 @@ struct FrameData
     int frame_index;
 };
 
+struct StreamingContext
+{
+    AVFormatContext *video_format_ctx;
+    const AVCodec *video_codec;
+    AVCodecContext *video_codec_context;
+    AVStream *video_stream;
+    AVDictionary *muxer_opts;
+    int video_frame_index = 0;
+    int frame_rate = 24;
+};
+
+// Raw packet data reconstructed into struct with metadata
+struct ReconstructedPacket
+{
+	uint32_t frameNumber;
+	std::vector<uint8_t> payload;
+};
+
 template<typename T>
 T minimum(T a, T b) {
     return (a < b) ? a : b;
@@ -50,5 +70,8 @@ T minimum(T a, T b) {
 void flipPixelsVertically(uint8_t *pixels, int width, int height); 
 
 void printUDPPacketFragment(AVPacket* pkt, int fragmentSize);
+
+
+void printYUV420pPixels(uint8_t *yuvData, int width, int height);
 
 #endif

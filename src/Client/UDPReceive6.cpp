@@ -5,15 +5,12 @@
  *  Modified to linux version by Petri Kiviniemi
  *
  */
-
-
 #include "UDPReceive6.h"
 
 extern "C" {
-#include <stdio.h>
-#include <time.h>
+	#include <stdio.h>
+	#include <time.h>
 }
-
 
 typedef struct RTHeader {
 	double		  time;
@@ -24,7 +21,6 @@ typedef struct RTHeader {
 UDPReceive6::UDPReceive6() {
 	recbuffer = new char[65000];
 }
-
 
 void UDPReceive6::init(int port) {
     // Create an IPv6 UDP socket
@@ -47,7 +43,6 @@ void UDPReceive6::init(int port) {
         return;
     }
 }
-
 
 int UDPReceive6::receive(char* buffer, int len, double* ptime) {
 	struct sockaddr_in6 si_other;
@@ -72,7 +67,6 @@ void UDPReceive6::closeSock() {
 	sock = 0;
 }
 
-
 /*
 int main() {
 
@@ -93,6 +87,3 @@ int main() {
 	WSACleanup();
 }
 */
-
-
-

@@ -15,23 +15,9 @@
 #include <filesystem>
 #include <common.hpp>
 
-
-struct StreamingContext
-{
-    AVFormatContext *video_format_ctx;
-    const AVCodec *video_codec;
-    AVCodecContext *video_codec_context;
-    AVStream *video_stream;
-    AVDictionary *muxer_opts;
-    int video_frame_index = 0;
-    int frame_rate = 24;
-};
-
-
 class FrameEncoder{
     private:
 		StreamingContext *encoder;
-		StreamingContext *decoder;
 		std::queue<FrameData *> frame_queue;
 		std::mutex queue_mtx;
 		std::condition_variable queue_cv;

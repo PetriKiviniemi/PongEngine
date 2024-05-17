@@ -1,12 +1,7 @@
 #include <PongEngineUDPClient.hpp>
 #include <cstdio>
 #include <map>
-
-struct ReconstructedPacket
-{
-	uint32_t frameNumber;
-	std::vector<uint8_t> payload;
-};
+#include <FrameDecoder.hpp>
 
 PongEngineUDPClient* PongEngineUDPClient::pinstance_{nullptr};
 std::mutex PongEngineUDPClient::mutex_;
@@ -23,11 +18,11 @@ PongEngineUDPClient *PongEngineUDPClient::GetInstance()
 
 void PongEngineUDPClient::receiveMessages()
 {
-    std::cout << "Receiving ..." << std::endl;
-    std::map<uint32_t, ReconstructedPacket> reconstructedPackets;
+    printf("Receiving\n");
+    std::map<uint32_t, ReconstructedPacket*> reconstructedPackets;
     while (is_receiving)
     {
-        // Since I am too lazy to change the UDP receiver function, simply store to buffer first, then copy bytes over
+        // Simply store to buffer first, then copy bytes over
         UDPHeader udpHeader;
         char buf[MAX_PACKET_SIZE];
         double ptime;
@@ -41,21 +36,32 @@ void PongEngineUDPClient::receiveMessages()
 
         std::memcpy(&udpHeader, buf, sizeof(UDPHeader));
 
-        auto &pkt = reconstructedPackets[udpHeader.frameNumber];
-        pkt.frameNumber = udpHeader.frameNumber;
+        ReconstructedPacket* pkt = reconstructedPackets[udpHeader.frameNumber];
+
+        //If packet does not exist, allocate packet
+        if(!pkt)
+        {
+            pkt = new ReconstructedPacket;
+            pkt->frameNumber = udpHeader.frameNumber;
+            reconstructedPackets[udpHeader.frameNumber] = pkt;
+        }
 
         size_t payloadStart = sizeof(UDPHeader);
 
         // Insert the fragment into the reconstructed packet data vector
-        pkt.payload.insert(pkt.payload.end(),
-                            reinterpret_cast<uint8_t *>(&udpHeader) + payloadStart,
-                            reinterpret_cast<uint8_t *>(&udpHeader) + payloadStart + udpHeader.payloadSize);
+        pkt->payload.insert(
+            pkt->payload.end(),
+            reinterpret_cast<uint8_t *>(&udpHeader) + payloadStart,
+            reinterpret_cast<uint8_t *>(&udpHeader) + payloadStart + udpHeader.payloadSize
+        );
 
         // If all the fragments are collected, simply then decode the frame
-        if (pkt.payload.size() >= udpHeader.totalFragments * MAX_PACKET_SIZE)
+        if (udpHeader.fragmentNumber == udpHeader.totalFragments - 1)
         {
-            std::cout << pkt.payload.data() << std::endl;
-            reconstructedPackets.erase(udpHeader.frameNumber);
+            //FrameDecoder takes care of deleting the pointers
+            //Probably not a good practice
+            FrameDecoder::GetInstance()->addRawDataToQueue(pkt);
+            reconstructedPackets.erase(pkt->frameNumber);
         }
     }
 }

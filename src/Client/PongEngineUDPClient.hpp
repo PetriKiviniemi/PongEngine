@@ -27,7 +27,6 @@ class PongEngineUDPClient{
         static std::mutex mutex_;
 
 		int UDP_PORT = 9090;
-        char* addr = "localhost";
         bool is_receiving = false;
         UDPReceive6 receiver;
 		std::thread udp_client_thread;

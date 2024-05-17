@@ -48,8 +48,6 @@ void UDPSend6::init(char *address, int addr_len,  int port ) {
 	freeaddrinfo(result);
 }
 
-
-
 int UDPSend6::send( char *buffer, int len ) {
 	char sendbuffer[65000];
 	

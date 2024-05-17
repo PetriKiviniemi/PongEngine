@@ -16,6 +16,12 @@ int main()
         {
             CloseWindow();
         }
+
+        BeginDrawing();
+        ClearBackground(BLACK);
+        //Get the frames from FrameDecoder queue
+        //Map them into textures and draw
+        EndDrawing();
     }
 
     std::cout << "Client initialized!" << std::endl;

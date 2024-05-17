@@ -32,6 +32,7 @@ add_executable(
     PongEngineClient
     src/Client/PongEngineClient.cpp
     src/Client/PongEngineUDPClient.cpp
+    src/Client/FrameDecoder.cpp
     src/Client/UDPReceive6.cpp
     src/common.cpp 
 )

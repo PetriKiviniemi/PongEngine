@@ -32,7 +32,6 @@ void PongEngineUDPServer::fragmentAndSendPacket(AVPacket *pkt, int frame_index)
 {
 	// Since we are only ever sending FFMPEG frames as udp packets
 	// Use UDPHeader always
-
 	int numFragments = (pkt->size + MAX_PACKET_SIZE - 1) / MAX_PACKET_SIZE;
 
 	// Create the custom header

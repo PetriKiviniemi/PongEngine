@@ -6,8 +6,6 @@ std::mutex FrameEncoder::mutex_;
 
 const char* video_file_name = "video.mp4";
 
-void printYUV420pPixels(uint8_t *yuvData, int width, int height);
-
 FrameEncoder *FrameEncoder::GetInstance()
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -300,47 +298,4 @@ int FrameEncoder::encodeAndAddToQueue(uint8_t* pixelData, uint32_t pixelDataSize
     frameData->frame_index = encoder->video_frame_index;
     addToQueue(frameData);
     return 0;
-}
-
-
-/*
- NOTE:: This is just utility function to print YUV420 pixel data to verify RGBA->YUV420p conversion
- This is copied from stackoverflow
-*/
-void printYUV420pPixels(uint8_t *yuvData, int width, int height) {
-    // Assuming `yuvData` is the pointer to YUV420p pixel data
-    // `width` and `height` are the dimensions of the image
-
-    int ySize = width * height;
-    int uSize = (width / 2) * (height / 2); // U and V planes are half width and height
-    int vSize = uSize;
-
-    // Pointer to Y, U, and V planes
-    uint8_t *yPlane = yuvData;
-    uint8_t *uPlane = yuvData + ySize;
-    uint8_t *vPlane = yuvData + ySize + uSize;
-
-    // Print individual pixel values
-    for (int row = 0; row < height; row++) {
-        for (int col = 0; col < width; col++) {
-            // Calculate pixel index in Y plane
-            int yIndex = row * width + col;
-
-            // Get luminance (Y) value
-            uint8_t yValue = yPlane[yIndex];
-
-            // Calculate pixel index in U and V planes (half resolution)
-            int uIndex = (row / 2) * (width / 2) + (col / 2);
-            int vIndex = (row / 2) * (width / 2) + (col / 2);
-
-            // Get chrominance (U and V) values
-            uint8_t uValue = uPlane[uIndex];
-            uint8_t vValue = vPlane[vIndex];
-
-            // Print pixel values (YUV)
-            std::cout << "Pixel (" << row << ", " << col << "): Y=" << static_cast<int>(yValue)
-                      << " U=" << static_cast<int>(uValue) << " V=" << static_cast<int>(vValue)
-                      << std::endl;
-        }
-    }
 }
