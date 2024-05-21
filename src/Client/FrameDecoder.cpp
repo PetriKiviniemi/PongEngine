@@ -169,7 +169,6 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
             printf("Failed to decode frame!");
     }
 
-    av_packet_free(&pkt);
     return 0;
 }
 
@@ -191,40 +190,37 @@ int FrameDecoder::rawDataToFrames(ReconstructedPacket* reconstructedPacket)
     data_size = reconstructedPacket->payload.size();
     data = reconstructedPacket->payload.data();
 
-    while (data_size > 0) {
-        printf("Parsing data, data_size: %ld\n", data_size);
-        ret = av_parser_parse2(parser, decoder->video_codec_context, &pkt->data, &pkt->size,
-                               data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-        if (ret < 0) {
-            fprintf(stderr, "Error while parsing\n");
+    printf("Parsing data, data_size: %ld\n", data_size);
+    ret = av_parser_parse2(parser, decoder->video_codec_context, &pkt->data, &pkt->size,
+                            data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+    if (ret < 0) {
+        fprintf(stderr, "Error while parsing\n");
+        av_packet_free(&pkt);
+        delete reconstructedPacket;
+        return -1;
+    }
+
+    printf("Parsed %d bytes, remaining data_size: %ld, packet size: %d\n", ret, data_size - ret, pkt->size);
+
+    if (pkt->size) 
+    {
+        printPacketContent(pkt);
+        printf("Decoding frame\n");
+        if (decodeFrame(pkt) < 0) {
+            fprintf(stderr, "Error decoding frame\n");
             av_packet_free(&pkt);
             delete reconstructedPacket;
             return -1;
         }
-
-        printf("Parsed %d bytes, remaining data_size: %ld, packet size: %d\n", ret, data_size - ret, pkt->size);
-
-        data += ret;
-        data_size -= ret;
-
-        if (pkt->size) {
-            printf("Decoding frame\n");
-            if (decodeFrame(pkt) < 0) {
-                fprintf(stderr, "Error decoding frame\n");
-                av_packet_free(&pkt);
-                delete reconstructedPacket;
-                return -1;
-            }
-        }
-        else
-        {
-            printf("Failed to parse pkt or reached EOF\n");
-            break;
-        }
+    }
+    else
+    {
+        printf("Failed to parse pkt or reached EOF\n");
     }
 
     //TODO:: Do we need to flush the decoder
 
+    av_packet_free(&pkt);
     delete reconstructedPacket;
     return 0;
 }

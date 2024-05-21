@@ -40,5 +40,6 @@ class FrameEncoder{
 
         int encodeAndAddToQueue(uint8_t* pixelData, uint32_t pixelDataSize);
         FrameData* getFrameFromQueue();
+        std::vector<FrameData*> getFrameBatchFromQueue(int amount);
         void cleanUp();
 };

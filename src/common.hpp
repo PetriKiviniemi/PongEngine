@@ -74,4 +74,6 @@ void printUDPPacketFragment(AVPacket* pkt, int fragmentSize);
 
 void printYUV420pPixels(uint8_t *yuvData, int width, int height);
 
+void printPacketContent(AVPacket *pkt);
+
 #endif

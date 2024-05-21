@@ -28,6 +28,17 @@ void printUDPPacketFragment(AVPacket* pkt, int fragmentSize)
     std::cout << std::dec << std::endl;
 }
 
+void printPacketContent(AVPacket *pkt) {
+    printf("Printing packet...\n");
+    printf("Packet data:\n");
+    printf("  Stream index: %d\n", pkt->stream_index);
+    printf("  Presentation timestamp: %ld\n", pkt->pts);
+    printf("  Decompression timestamp: %ld\n", pkt->dts);
+    printf("  Duration: %ld\n", pkt->duration);
+    printf("  Size: %d\n", pkt->size);
+    printf("  Flags: %d\n", pkt->flags);
+}
+
 /*
  NOTE:: This is just utility function to print YUV420 pixel data to verify RGBA->YUV420p conversion
  This is copied from stackoverflow

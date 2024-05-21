@@ -93,7 +93,7 @@ int main()
 {
     //Lets make pong
     InitWindow(WINDOW_HEIGHT, WINDOW_WIDTH, "Pong");
-    SetTargetFPS(60);
+    SetTargetFPS(30);
 
     //Random starting direction for ball
     srand(time(NULL));
@@ -307,8 +307,11 @@ int main()
 
         flipPixelsVertically(pixelData, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        //NOTE:: REMEMBER TO FREE THE PIXELDATA IN THE FrameEncoder
+        // We have to do some rate limiting here, 
+        // since the server is not fast enough to process all the frames
+
         frameEncoder->encodeAndAddToQueue(pixelData, textureSize);
+        delete[] pixelData;
 
         EndDrawing();
 

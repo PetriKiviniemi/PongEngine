@@ -32,7 +32,9 @@ void PongEngineUDPServer::fragmentAndSendPacket(AVPacket *pkt, int frame_index)
 {
 	// Since we are only ever sending FFMPEG frames as udp packets
 	// Use UDPHeader always
-	int numFragments = (pkt->size + MAX_PACKET_SIZE - 1) / MAX_PACKET_SIZE;
+
+	//TODO:: Revise this code
+	int numFragments = pkt->size / MAX_PACKET_SIZE;
 
 	// Create the custom header
 	UDPHeader udpHeader;
@@ -58,6 +60,5 @@ void PongEngineUDPServer::fragmentAndSendPacket(AVPacket *pkt, int frame_index)
 		delete[] charBuff;
 
 		//TODO:: Sync to framerate (25-30fps)
-		std::this_thread::sleep_for(std::chrono::milliseconds(40)); // Add delay if needed
 	}
 }

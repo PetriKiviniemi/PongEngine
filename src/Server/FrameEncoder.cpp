@@ -64,6 +64,23 @@ FrameData* FrameEncoder::getFrameFromQueue()
     return frameData;
 }
 
+std::vector<FrameData*> FrameEncoder::getFrameBatchFromQueue(int amount)
+{
+    if(frame_queue.empty())
+        return std::vector<FrameData*>{};
+    
+    std::vector<FrameData*> data{};
+    for(int i = 0; i < amount; i++)
+    {
+        if(!frame_queue.empty())
+        {
+            data.push_back(frame_queue.front());
+            frame_queue.pop();
+        }
+    }
+    return data;
+}
+
 void FrameEncoder::addToQueue(FrameData *frameData)
 {
     {
@@ -173,13 +190,16 @@ void FrameEncoder::processFrames()
         if (stop_processing && frame_queue.empty())
             break;
         
-        FrameData* frameData = getFrameFromQueue();
-        if (frameData)
+        // Process in batch instead of single to reduce queue locking overhead
+        // The overhead is probably never an issue but just to make sure
+        int frame_count = 10;
+        std::vector<FrameData*> frameData = getFrameBatchFromQueue(frame_count);
+        for(int i = 0; i < frameData.size(); i++)
         {
-            encodeFrame(frameData);
-            AVFrame *frame = frameData->frame;
-            av_frame_free(&frame); // Free the processed frame
-            delete frameData;
+            encodeFrame(frameData[i]);
+            AVFrame* frame = frameData[i]->frame;
+            av_frame_free(&frame);
+            delete frameData[i];
         }
     }
 }
@@ -212,10 +232,11 @@ void FrameEncoder::encodeFrame(FrameData* frameData)
     if (ret < 0)
     {
         std::cerr << "Error receiving packet from codec: " << ret << std::endl;
-        delete frameData;
         av_packet_free(&pkt);
         return;
     }
+
+    int count = 0;
 
     while (ret >= 0)
     {
@@ -245,6 +266,9 @@ void FrameEncoder::encodeFrame(FrameData* frameData)
         // And we could poll the queue with our udp server
         // But for now, sending the packets straight away seems more efficient
         PongEngineUDPServer::GetInstance()->fragmentAndSendPacket(pkt, frameData->frame_index);
+
+        //For writing to a local videofile
+        //av_write_frame(encoder->video_format_ctx, pkt);
 
         av_packet_unref(pkt);
     }
@@ -291,7 +315,6 @@ int FrameEncoder::encodeAndAddToQueue(uint8_t* pixelData, uint32_t pixelDataSize
     }
 
     sws_freeContext(sws_ctx);
-    delete[] pixelData;
 
     FrameData *frameData = new FrameData;
     frameData->frame = frame;
