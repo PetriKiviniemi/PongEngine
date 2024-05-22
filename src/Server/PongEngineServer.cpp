@@ -33,29 +33,29 @@ void PongEngineUDPServer::fragmentAndSendPacket(AVPacket *pkt, int frame_index)
 	// Since we are only ever sending FFMPEG frames as udp packets
 	// Use UDPHeader always
 
-	//TODO:: Revise this code
-	int numFragments = pkt->size / MAX_PACKET_SIZE;
+	int numFragments = std::ceil(pkt->size / MAX_PACKET_SIZE);
 
 	// Create the custom header
 	UDPHeader udpHeader;
 	udpHeader.frameNumber = frame_index;
 	udpHeader.totalFragments = numFragments;
 
-	for (int fragmentIndex = 0; fragmentIndex < numFragments; ++fragmentIndex) {
-		int fragmentSize = minimum(MAX_PACKET_SIZE, pkt->size - fragmentIndex * MAX_PACKET_SIZE);
+	for (int fragIdx = 0; fragIdx < numFragments; ++fragIdx) {
+		int fragmentSize = minimum(MAX_PACKET_SIZE, pkt->size - fragIdx * MAX_PACKET_SIZE);
 		
-		udpHeader.fragmentNumber = fragmentIndex;
+		udpHeader.fragmentNumber = fragIdx;
 		udpHeader.payloadSize = fragmentSize;
 
 		// Copy UDP header and payload data into pkt->data
 		std::memcpy(pkt->data, &udpHeader, sizeof(UDPHeader));
-		std::memcpy(pkt->data + sizeof(UDPHeader), pkt->data + fragmentIndex * MAX_PACKET_SIZE, fragmentSize);
+		std::memcpy(pkt->data + sizeof(UDPHeader), pkt->data + fragIdx * MAX_PACKET_SIZE, fragmentSize);
+
 		size_t totalDataSize = sizeof(UDPHeader) + fragmentSize;
 		char* charBuff = new char[totalDataSize];
 		std::memcpy(charBuff, reinterpret_cast<char*>(pkt->data), totalDataSize);
 
 		// Send UDP packet
-		udp_sender.send(charBuff, sizeof(UDPHeader) + fragmentSize);
+		udp_sender.send(charBuff, totalDataSize);
 
 		delete[] charBuff;
 

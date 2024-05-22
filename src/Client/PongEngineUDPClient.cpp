@@ -24,9 +24,10 @@ void PongEngineUDPClient::receiveMessages()
     {
         // Simply store to buffer first, then copy bytes over
         UDPHeader udpHeader;
-        char buf[MAX_PACKET_SIZE];
+        const size_t buf_size = MAX_PACKET_SIZE + sizeof(UDPHeader);
+        char buf[buf_size];
         double ptime;
-        auto ret_code = receiver.receive(buf, sizeof buf, &ptime);
+        auto ret_code = receiver.receive(buf, buf_size, &ptime);
 
         if (ret_code < 0)
         {
@@ -46,13 +47,13 @@ void PongEngineUDPClient::receiveMessages()
             reconstructedPackets[udpHeader.frameNumber] = pkt;
         }
 
+        // Payload starts after the header
         size_t payloadStart = sizeof(UDPHeader);
 
-        // Insert the fragment into the reconstructed packet data vector
         pkt->payload.insert(
             pkt->payload.end(),
-            reinterpret_cast<uint8_t *>(&udpHeader) + payloadStart,
-            reinterpret_cast<uint8_t *>(&udpHeader) + payloadStart + udpHeader.payloadSize
+            reinterpret_cast<uint8_t*>(&buf) + payloadStart,
+            reinterpret_cast<uint8_t*>(&buf) + payloadStart + udpHeader.payloadSize
         );
 
         // If all the fragments are collected, simply then decode the frame
