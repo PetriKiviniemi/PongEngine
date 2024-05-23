@@ -80,3 +80,35 @@ void printYUV420pPixels(uint8_t *yuvData, int width, int height) {
         }
     }
 }
+
+void saveBytesToFile(const uint8_t* bytes, size_t size, const std::string& filePath)
+{
+    std::ofstream outFile(filePath, std::ios::binary);
+    if (!outFile)
+    {
+        std::cerr << "Failed to open file for writing: " << filePath << std::endl;
+        return;
+    }
+
+    outFile.write(reinterpret_cast<const char*>(bytes), size);
+    if (!outFile)
+    {
+        std::cerr << "Failed to write bytes to file: " << filePath << std::endl;
+    }
+    
+    outFile.close();
+    if (!outFile)
+    {
+        std::cerr << "Failed to close file: " << filePath << std::endl;
+    }
+}
+
+void printHexDump(const uint8_t* buffer, size_t size) {
+    for (size_t i = 0; i < size; ++i) {
+        printf("%02X ", buffer[i]);
+        if ((i + 1) % 16 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n");
+}

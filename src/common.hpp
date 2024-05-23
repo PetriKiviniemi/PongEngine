@@ -4,6 +4,8 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <fstream>
+#include <cstdint>
 
 extern "C"
 {
@@ -31,7 +33,8 @@ struct UDPHeader {
     uint32_t frameNumber;    
     uint32_t fragmentNumber; 
     uint32_t totalFragments; 
-	uint32_t payloadSize;
+	uint32_t totalSize;
+    uint32_t fragmentSize;
 };
 
 struct FrameData
@@ -71,9 +74,12 @@ void flipPixelsVertically(uint8_t *pixels, int width, int height);
 
 void printUDPPacketFragment(AVPacket* pkt, int fragmentSize);
 
+void printHexDump(const uint8_t* buffer, size_t size);
 
 void printYUV420pPixels(uint8_t *yuvData, int width, int height);
 
 void printPacketContent(AVPacket *pkt);
+
+void saveBytesToFile(const uint8_t* bytes, size_t size, const std::string& filePath);
 
 #endif

@@ -50,37 +50,40 @@ int FrameDecoder::prepareDecoder()
     std::cout << "Preparing decoder..." << std::endl;
     av_log_set_level(AV_LOG_DEBUG);
 
+    // Allocate memory for decoder
     decoder = new StreamingContext;
-    parser = new AVCodecParserContext;
 
-    //TODO:: Put the common codec information to the common.hpp
+    // Find video codec
     decoder->video_codec = avcodec_find_decoder(AV_CODEC_ID_MPEG4);
-    decoder->video_codec_context = avcodec_alloc_context3(decoder->video_codec);
-
     if (!decoder->video_codec) {
-        fprintf(stderr, "Codec not found\n");
+        std::cerr << "Codec not found" << std::endl;
         exit(1);
     }
 
+    // Allocate codec context
+    decoder->video_codec_context = avcodec_alloc_context3(decoder->video_codec);
+    if (!decoder->video_codec_context) {
+        std::cerr << "Could not allocate video codec context" << std::endl;
+        exit(1);
+    }
+
+    // Open codec
     if (avcodec_open2(decoder->video_codec_context, decoder->video_codec, NULL) < 0) {
-        fprintf(stderr, "Could not open codec\n");
+        std::cerr << "Could not open codec" << std::endl;
         exit(1);
     }
 
+    // Initialize parser
     parser = av_parser_init(decoder->video_codec->id);
     if (!parser) {
-        fprintf(stderr, "parser not found\n");
+        std::cerr << "Parser not found" << std::endl;
         exit(1);
     }
 
-    if (!decoder->video_codec_context) {
-        fprintf(stderr, "Could not allocate video codec context\n");
-        exit(1);
-    }
-
-    printf("Decoder prepared!\n");
+    std::cout << "Decoder prepared!" << std::endl;
     return 0;
 }
+
 
 void FrameDecoder::processRawPacketData()
 {
@@ -104,7 +107,6 @@ void FrameDecoder::processRawPacketData()
         {
             printf("rawDataToFrames\n");
             rawDataToFrames(rpkt);
-            delete rpkt;
         }
     }
 }
@@ -128,21 +130,9 @@ void FrameDecoder::addRawDataToQueue(ReconstructedPacket* rpkt)
     queue_cv.notify_one();
 }
 
-void print_frame_info(AVFrame *frame) {
-    printf("Frame width: %d\n", frame->width);
-    printf("Frame height: %d\n", frame->height);
-    printf("Data pointers:\n");
-    
-    for (int i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-        if (frame->data[i] != NULL) {
-            printf("  Data[%d] size: %d\n", i, frame->linesize[i] * frame->height);
-        }
-    }
-}
 
 int FrameDecoder::decodeFrame(AVPacket* pkt)
 {
-    char buf[1024];
     int ret;
     AVFrame* frame = nullptr;
     printf("Decoding pkt to frame...\n");
@@ -155,11 +145,12 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
  
     while (ret >= 0) {
         ret = avcodec_receive_frame(decoder->video_codec_context, frame);
+
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
             return -1;
         else if (ret < 0) {
             fprintf(stderr, "Error during decoding\n");
-            exit(1);
+            return -1;
         }
 
         //TODO:: Do something with the frame
@@ -180,52 +171,38 @@ int FrameDecoder::rawDataToFrames(ReconstructedPacket* reconstructedPacket)
         return -1;
     }
 
-    printf("ReconstructedPacket to frame frameN: %d payloadSize: %ld \n",
-           reconstructedPacket->frameNumber, reconstructedPacket->payload.size());
-
     size_t data_size = reconstructedPacket->payload.size();
     const uint8_t* data = reconstructedPacket->payload.data();
     size_t parsed_bytes = 0;
 
-    printf("Parsing data, data_size: %ld\n", data_size);
+    int ret = av_parser_parse2(parser, decoder->video_codec_context, &pkt->data, &pkt->size,
+                            data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+    if (ret < 0) {
+        fprintf(stderr, "Error while parsing\n");
+        av_packet_free(&pkt);
+        delete reconstructedPacket;
+        return -1;
+    }
 
-    while(data_size > 0)
+    if (pkt->size > 0) 
     {
-        int ret = av_parser_parse2(parser, decoder->video_codec_context, &pkt->data, &pkt->size,
-                                data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-        if (ret < 0) {
-            fprintf(stderr, "Error while parsing\n");
+        printPacketContent(pkt);
+        printf("Decoding frame\n");
+
+        if (decodeFrame(pkt) < 0) {
+            fprintf(stderr, "Error decoding frame\n");
             av_packet_free(&pkt);
             delete reconstructedPacket;
             return -1;
         }
-        
-        data += ret;
-        data_size -= ret;
-
-        printf("Parsed %d bytes, remaining data_size: %ld, packet size: %d\n", ret, data_size - ret, pkt->size);
-
-        if (pkt->size) 
-        {
-            printPacketContent(pkt);
-            printf("Decoding frame\n");
-
-            if (decodeFrame(pkt) < 0) {
-                fprintf(stderr, "Error decoding frame\n");
-                av_packet_free(&pkt);
-                delete reconstructedPacket;
-                return -1;
-            }
-        }
-        else
-        {
-            printf("Failed to parse pkt or reached EOF\n");
-        }
+    }
+    else
+    {
+        printf("Failed to parse pkt or reached EOF\n");
+        av_packet_free(&pkt);
+        delete reconstructedPacket;
     }
 
     //TODO:: Do we need to flush the decoder
-
-    av_packet_free(&pkt);
-    delete reconstructedPacket;
     return 0;
 }

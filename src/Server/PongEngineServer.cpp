@@ -30,35 +30,38 @@ void PongEngineUDPServer::closeServer()
 
 void PongEngineUDPServer::fragmentAndSendPacket(AVPacket *pkt, int frame_index)
 {
-	// Since we are only ever sending FFMPEG frames as udp packets
-	// Use UDPHeader always
+    // Calculate the number of fragments required
+    int numFragments = std::ceil(static_cast<double>(pkt->size) / MAX_PACKET_SIZE);
 
-	int numFragments = std::ceil(pkt->size / MAX_PACKET_SIZE);
+    // Create the custom header
+    UDPHeader udpHeader;
+    udpHeader.frameNumber = frame_index;
+    udpHeader.totalFragments = numFragments;
+	udpHeader.totalSize = pkt->size;
 
-	// Create the custom header
-	UDPHeader udpHeader;
-	udpHeader.frameNumber = frame_index;
-	udpHeader.totalFragments = numFragments;
+    for (int fragIdx = 0; fragIdx < numFragments; ++fragIdx) {
+        // Determine the size of the current fragment
+        int fragmentSize = std::min(MAX_PACKET_SIZE, pkt->size - fragIdx * MAX_PACKET_SIZE);
 
-	for (int fragIdx = 0; fragIdx < numFragments; ++fragIdx) {
-		int fragmentSize = minimum(MAX_PACKET_SIZE, pkt->size - fragIdx * MAX_PACKET_SIZE);
-		
-		udpHeader.fragmentNumber = fragIdx;
-		udpHeader.payloadSize = fragmentSize;
+        udpHeader.fragmentNumber = fragIdx;
+		udpHeader.fragmentSize = fragmentSize;
 
-		// Copy UDP header and payload data into pkt->data
-		std::memcpy(pkt->data, &udpHeader, sizeof(UDPHeader));
-		std::memcpy(pkt->data + sizeof(UDPHeader), pkt->data + fragIdx * MAX_PACKET_SIZE, fragmentSize);
+        // Allocate buffer for the UDP packet
+        size_t totalDataSize = sizeof(UDPHeader) + fragmentSize;
+        char* charBuff = new char[totalDataSize];
 
-		size_t totalDataSize = sizeof(UDPHeader) + fragmentSize;
-		char* charBuff = new char[totalDataSize];
-		std::memcpy(charBuff, reinterpret_cast<char*>(pkt->data), totalDataSize);
+        // Copy UDP header into the buffer
+        std::memcpy(charBuff, &udpHeader, sizeof(UDPHeader));
 
-		// Send UDP packet
-		udp_sender.send(charBuff, totalDataSize);
+        // Copy the fragment payload into the buffer
+        std::memcpy(charBuff + sizeof(UDPHeader), pkt->data + fragIdx * MAX_PACKET_SIZE, fragmentSize);
 
-		delete[] charBuff;
+        // Send UDP packet
+        udp_sender.send(charBuff, totalDataSize);
 
-		//TODO:: Sync to framerate (25-30fps)
-	}
+        // Free the buffer memory
+        delete[] charBuff;
+
+        // TODO: Sync to framerate (25-30fps)
+    }
 }

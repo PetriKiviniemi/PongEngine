@@ -2,12 +2,14 @@
 
 #include <iostream>
 #include <PongEngineUDPClient.hpp>
+#include <FrameDecoder.hpp>
 
 int main()
 {
     InitWindow(WINDOW_HEIGHT, WINDOW_WIDTH, "PongClient");
     SetTargetFPS(60);
 
+    FrameDecoder::GetInstance();
     PongEngineUDPClient::GetInstance()->runClient();
 
     while(WindowShouldClose() == false)
