@@ -22,6 +22,9 @@ class FrameDecoder {
         std::queue<ReconstructedPacket*> rawDataQueue;
 		std::mutex queue_mtx;
 
+        std::queue<AVFrame*> decodedFramesQueue;
+        std::mutex frame_queue_mtx;
+
 		std::condition_variable queue_cv;
 		std::atomic<bool> stop_processing{false};
 		std::thread data_processing_thread;
@@ -42,6 +45,9 @@ class FrameDecoder {
         ReconstructedPacket* getRawPacketFromQueue();
         void addRawDataToQueue(ReconstructedPacket* rpkt);
         void processRawPacketData();
+
+        void addFrameToQueue(AVFrame* frame);
+        AVFrame* getFrameFromQueue();
 };
 
 #endif

@@ -112,3 +112,18 @@ void printHexDump(const uint8_t* buffer, size_t size) {
     }
     printf("\n");
 }
+
+void convertYUV420PtoRGB(AVFrame* srcFrame, AVFrame* dstFrame) {
+    SwsContext* swsContext = sws_getContext(
+        srcFrame->width, srcFrame->height, AV_PIX_FMT_YUV420P,
+        dstFrame->width, dstFrame->height, AV_PIX_FMT_RGBA,
+        0, nullptr, nullptr, nullptr);
+    if (!swsContext) {
+        throw std::runtime_error("Failed to initialize SwsContext");
+    }
+
+    sws_scale(swsContext, srcFrame->data, srcFrame->linesize,
+              0, srcFrame->height, dstFrame->data, dstFrame->linesize);
+
+    sws_freeContext(swsContext);
+}

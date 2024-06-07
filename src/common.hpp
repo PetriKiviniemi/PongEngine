@@ -72,6 +72,8 @@ T minimum(T a, T b) {
 // Flip the texture, and then the calculations would be done on GPU instead of CPU
 void flipPixelsVertically(uint8_t *pixels, int width, int height); 
 
+void convertYUV420PtoRGB(AVFrame* srcFrame, AVFrame* dstFrame);
+
 void printUDPPacketFragment(AVPacket* pkt, int fragmentSize);
 
 void printHexDump(const uint8_t* buffer, size_t size);

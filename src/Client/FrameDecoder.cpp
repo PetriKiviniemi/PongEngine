@@ -97,15 +97,12 @@ void FrameDecoder::processRawPacketData()
             });
         }
 
-        printf("Queue is not empty\n");
-
         if(stop_processing && rawDataQueue.empty())
             break;
 
         ReconstructedPacket* rpkt = getRawPacketFromQueue();
         if(rpkt)
         {
-            printf("rawDataToFrames\n");
             rawDataToFrames(rpkt);
         }
     }
@@ -130,19 +127,36 @@ void FrameDecoder::addRawDataToQueue(ReconstructedPacket* rpkt)
     queue_cv.notify_one();
 }
 
+void FrameDecoder::addFrameToQueue(AVFrame* frame)
+{
+    {
+        std::lock_guard<std::mutex> lock(frame_queue_mtx);
+        decodedFramesQueue.push(frame);
+    }
+}
+
+AVFrame* FrameDecoder::getFrameFromQueue()
+{
+    if(decodedFramesQueue.empty())
+        return nullptr;
+
+    AVFrame* frame = decodedFramesQueue.front();
+    decodedFramesQueue.pop();
+    return frame;
+}
+
 
 int FrameDecoder::decodeFrame(AVPacket* pkt)
 {
     int ret;
-    AVFrame* frame = nullptr;
-    printf("Decoding pkt to frame...\n");
- 
+    AVFrame* frame = av_frame_alloc();
+
     ret = avcodec_send_packet(decoder->video_codec_context, pkt);
     if (ret < 0) {
         fprintf(stderr, "Error sending a packet for decoding\n");
         exit(1);
     }
- 
+
     while (ret >= 0) {
         ret = avcodec_receive_frame(decoder->video_codec_context, frame);
 
@@ -153,13 +167,32 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
             return -1;
         }
 
-        //TODO:: Do something with the frame
+        //TODO:: This is the problematic code
         if(frame)
-            printf("Frame decoded succesfully!");
-        else
-            printf("Failed to decode frame!");
-    }
+        {
+            // Create a dummy RGB Frame for conversion
+            AVFrame* rgbFrame = av_frame_alloc();
+            if (!rgbFrame) {
+                throw std::runtime_error("Failed to allocate AVFrame");
+            }
 
+            rgbFrame->format = AV_PIX_FMT_RGBA;
+            rgbFrame->width = WINDOW_WIDTH;
+            rgbFrame->height = WINDOW_HEIGHT;
+
+            int frame_ret = av_frame_get_buffer(rgbFrame, 32); // Align buffer to 32 bytes
+
+            if (frame_ret < 0) {
+                throw std::runtime_error("Failed to allocate frame buffer");
+            }
+
+            convertYUV420PtoRGB(frame, rgbFrame);
+            addFrameToQueue(rgbFrame);
+            delete frame;
+        }
+        else
+            return -1;
+    }
     return 0;
 }
 
@@ -177,6 +210,7 @@ int FrameDecoder::rawDataToFrames(ReconstructedPacket* reconstructedPacket)
 
     int ret = av_parser_parse2(parser, decoder->video_codec_context, &pkt->data, &pkt->size,
                             data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+
     if (ret < 0) {
         fprintf(stderr, "Error while parsing\n");
         av_packet_free(&pkt);
@@ -186,9 +220,6 @@ int FrameDecoder::rawDataToFrames(ReconstructedPacket* reconstructedPacket)
 
     if (pkt->size > 0) 
     {
-        printPacketContent(pkt);
-        printf("Decoding frame\n");
-
         if (decodeFrame(pkt) < 0) {
             fprintf(stderr, "Error decoding frame\n");
             av_packet_free(&pkt);

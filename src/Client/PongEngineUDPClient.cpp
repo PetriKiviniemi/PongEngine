@@ -18,7 +18,6 @@ PongEngineUDPClient *PongEngineUDPClient::GetInstance()
 
 void PongEngineUDPClient::receiveMessages()
 {
-    printf("Receiving\n");
     std::map<uint32_t, ReconstructedPacket*> reconstructedPackets;
 
     while (is_receiving)
@@ -29,7 +28,6 @@ void PongEngineUDPClient::receiveMessages()
         double ptime;
         auto ret_code = receiver.receive(buf, buf_size, &ptime);
 
-        printf("Received bytes: %d\n", ret_code);
 
         if (ret_code < 0)
         {
@@ -62,6 +60,15 @@ void PongEngineUDPClient::receiveMessages()
         // If all fragments are received, add to the FrameDecoder queue
         if (udpHeader.fragmentNumber == udpHeader.totalFragments - 1)
         {
+            //Lets store the first 20 frames into a file
+            if (udpHeader.frameNumber < 20)
+            {
+                std::string fileName = "./TempFrameData/Client_Frame";
+                fileName += std::to_string(udpHeader.frameNumber);
+                fileName += ".txt";
+                saveBytesToFile(pkt->payload.data(), pkt->payload.size(), fileName.c_str());
+            }
+
             if(pkt->payload.size() != udpHeader.totalSize)
                 printf("Size missmatch. Fragment lost?\n");
 
@@ -75,5 +82,6 @@ void PongEngineUDPClient::receiveMessages()
     {
         delete entry.second;
     }
+
     reconstructedPackets.clear();
 }

@@ -139,7 +139,8 @@ int FrameEncoder::prepare_video_encoder()
     encoder->video_codec_context->bit_rate = 1000000; // Bitrate
     encoder->video_codec_context->time_base = {1, encoder->frame_rate};
     encoder->video_codec_context->gop_size = 10;
-    encoder->video_codec_context->max_b_frames = 2;
+    //Lets not use B Frames for the stream
+    //encoder->video_codec_context->max_b_frames = 0;
 
     // Set codec profile and level
     encoder->video_codec_context->profile = FF_PROFILE_MPEG4_MAIN;

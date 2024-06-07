@@ -39,6 +39,15 @@ void PongEngineUDPServer::fragmentAndSendPacket(AVPacket *pkt, int frame_index)
     udpHeader.totalFragments = numFragments;
 	udpHeader.totalSize = pkt->size;
 
+    //Lets store the first 20 frames into a file
+    if (udpHeader.frameNumber < 20)
+    {
+        std::string fileName = "./TempFrameData/Server_Frame";
+        fileName += std::to_string(frame_index);
+        fileName += ".txt";
+        saveBytesToFile(pkt->data, pkt->size, fileName.c_str());
+    }
+
     for (int fragIdx = 0; fragIdx < numFragments; ++fragIdx) {
         // Determine the size of the current fragment
         int fragmentSize = std::min(MAX_PACKET_SIZE, pkt->size - fragIdx * MAX_PACKET_SIZE);
