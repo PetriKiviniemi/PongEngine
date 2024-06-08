@@ -16,7 +16,6 @@ class FrameDecoder {
         static FrameDecoder* pinstance_;
         static std::mutex mutex_;
 
-
 		StreamingContext* decoder;
         AVCodecParserContext* parser;
 
@@ -42,6 +41,7 @@ class FrameDecoder {
         FrameDecoder(FrameDecoder &other) = delete;
         void operator=(const FrameDecoder &) = delete;
         static FrameDecoder *GetInstance();
+        int getFrameIndex() { return decoder->video_frame_index; }
 
         ReconstructedPacket* getRawPacketFromQueue();
         void addRawDataToQueue(ReconstructedPacket* rpkt);
@@ -50,7 +50,7 @@ class FrameDecoder {
         void addFrameToQueue(AVFrame* frame);
         AVFrame* getFrameFromQueue();
 
-        void saveFrametoPng(AVFrame* frame);
+        void saveFrametoPng(AVFrame* frame, AVPixelFormat ogpxfmt);
 };
 
 #endif

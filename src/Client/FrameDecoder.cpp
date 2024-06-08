@@ -93,15 +93,15 @@ int FrameDecoder::prepareDecoder()
     return 0;
 }
 
-void FrameDecoder::saveFrametoPng(AVFrame* frame) {
+void FrameDecoder::saveFrametoPng(AVFrame* frame, AVPixelFormat ogpxfmt) {
 
-    std::string name("Frame_From_Server" + std::to_string(decoder->video_frame_index++) + ".png");
+    std::string name("Frame_From_Client" + std::to_string(decoder->video_frame_index++) + ".png");
     //RGBA Images
     uint8_t* dataImage = new uint8_t[frame->width * frame->height * 4];
 
     const int rgba_linesize[1] = { 4 * frame->width };
     SwsContext* sws_ctx = sws_getContext(
-        frame->width, frame->height, AV_PIX_FMT_RGBA,
+        frame->width, frame->height, ogpxfmt,
         frame->width, frame->height, AV_PIX_FMT_RGBA,
         0, 0, 0, 0);
 
@@ -243,11 +243,6 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
             }
 
             convertYUV420PtoRGB(frame, rgbFrame);
-            if(decoder->video_frame_index <= 10)
-            {
-                saveFrametoPng(rgbFrame);
-            }
-            
             addFrameToQueue(rgbFrame);
         }
     }
