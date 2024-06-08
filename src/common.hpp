@@ -51,7 +51,7 @@ struct StreamingContext
     AVStream *video_stream;
     AVDictionary *muxer_opts;
     int video_frame_index = 0;
-    int frame_rate = 24;
+    int frame_rate = 25;
 };
 
 // Raw packet data reconstructed into struct with metadata
@@ -79,6 +79,8 @@ void printUDPPacketFragment(AVPacket* pkt, int fragmentSize);
 void printHexDump(const uint8_t* buffer, size_t size);
 
 void printYUV420pPixels(uint8_t *yuvData, int width, int height);
+
+void printRGBAPixels(uint8_t* rgbaData, int width, int height);
 
 void printPacketContent(AVPacket *pkt);
 

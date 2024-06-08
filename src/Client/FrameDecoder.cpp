@@ -1,5 +1,6 @@
 #include <FrameDecoder.hpp>
 
+
 FrameDecoder* FrameDecoder::pinstance_{nullptr};
 std::mutex FrameDecoder::mutex_;
 
@@ -67,6 +68,14 @@ int FrameDecoder::prepareDecoder()
         exit(1);
     }
 
+    decoder->video_codec_context->bit_rate = 1000000; // Bitrate
+    decoder->video_codec_context->width = WINDOW_WIDTH;
+    decoder->video_codec_context->height = WINDOW_HEIGHT;
+    decoder->video_codec_context->time_base = { 1, 25 };
+    decoder->video_codec_context->framerate = { 25, 1 };
+    decoder->video_codec_context->gop_size = 10;
+    decoder->video_codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
+
     // Open codec
     if (avcodec_open2(decoder->video_codec_context, decoder->video_codec, NULL) < 0) {
         std::cerr << "Could not open codec" << std::endl;
@@ -82,6 +91,34 @@ int FrameDecoder::prepareDecoder()
 
     std::cout << "Decoder prepared!" << std::endl;
     return 0;
+}
+
+void FrameDecoder::saveFrametoPng(AVFrame* frame) {
+
+    std::string name("Frame_From_Server" + std::to_string(decoder->video_frame_index++) + ".png");
+    //RGBA Images
+    uint8_t* dataImage = new uint8_t[frame->width * frame->height * 4];
+
+    const int rgba_linesize[1] = { 4 * frame->width };
+    SwsContext* sws_ctx = sws_getContext(
+        frame->width, frame->height, AV_PIX_FMT_RGBA,
+        frame->width, frame->height, AV_PIX_FMT_RGBA,
+        0, 0, 0, 0);
+
+    sws_scale(sws_ctx,
+        frame->data, frame->linesize,
+        0, frame->height, &dataImage, rgba_linesize
+    );
+
+    //Using stb_image_write for writing the png files
+    stbi_write_png(
+        name.c_str(), frame->width, frame->height,
+        4, dataImage, 4 * frame->width
+    );
+
+    sws_freeContext(sws_ctx);
+
+    delete[] dataImage;
 }
 
 
@@ -150,9 +187,15 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
 {
     int ret;
     AVFrame* frame = av_frame_alloc();
+    if(!frame)
+    {
+        fprintf(stderr, "Could not allocate AVFrame\n");
+        return -1;
+    }
 
     ret = avcodec_send_packet(decoder->video_codec_context, pkt);
     if (ret < 0) {
+        av_frame_free(&frame);
         fprintf(stderr, "Error sending a packet for decoding\n");
         exit(1);
     }
@@ -161,19 +204,29 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
         ret = avcodec_receive_frame(decoder->video_codec_context, frame);
 
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+        {
+            av_frame_free(&frame);
             return -1;
+        }
+
         else if (ret < 0) {
+            av_frame_free(&frame);
             fprintf(stderr, "Error during decoding\n");
             return -1;
         }
 
+        decoder->video_frame_index++;
+
         //TODO:: This is the problematic code
         if(frame)
         {
+            printf("Frame decoded, converting and sending...\n");
             // Create a dummy RGB Frame for conversion
             AVFrame* rgbFrame = av_frame_alloc();
             if (!rgbFrame) {
                 throw std::runtime_error("Failed to allocate AVFrame");
+                av_frame_free(&frame);
+                return -1;
             }
 
             rgbFrame->format = AV_PIX_FMT_RGBA;
@@ -183,16 +236,23 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
             int frame_ret = av_frame_get_buffer(rgbFrame, 32); // Align buffer to 32 bytes
 
             if (frame_ret < 0) {
-                throw std::runtime_error("Failed to allocate frame buffer");
+                av_frame_free(&frame);
+                av_frame_free(&rgbFrame);
+                fprintf(stderr, "Failed to allocate frame buffer\n");
+                return -1;
             }
 
             convertYUV420PtoRGB(frame, rgbFrame);
+            if(decoder->video_frame_index <= 10)
+            {
+                saveFrametoPng(rgbFrame);
+            }
+            
             addFrameToQueue(rgbFrame);
-            delete frame;
         }
-        else
-            return -1;
     }
+
+    av_frame_free(&frame);
     return 0;
 }
 
@@ -221,7 +281,6 @@ int FrameDecoder::rawDataToFrames(ReconstructedPacket* reconstructedPacket)
     if (pkt->size > 0) 
     {
         if (decodeFrame(pkt) < 0) {
-            fprintf(stderr, "Error decoding frame\n");
             av_packet_free(&pkt);
             delete reconstructedPacket;
             return -1;
@@ -229,7 +288,6 @@ int FrameDecoder::rawDataToFrames(ReconstructedPacket* reconstructedPacket)
     }
     else
     {
-        printf("Failed to parse pkt or reached EOF\n");
         av_packet_free(&pkt);
         delete reconstructedPacket;
     }

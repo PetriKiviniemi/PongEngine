@@ -81,6 +81,36 @@ void printYUV420pPixels(uint8_t *yuvData, int width, int height) {
     }
 }
 
+void printRGBAPixels(uint8_t* rgbaData, int width, int height) {
+    // Assuming `rgbaData` is the pointer to RGBA pixel data
+    // `width` and `height` are the dimensions of the image
+
+    // RGBA format has 4 bytes per pixel: R, G, B, and A
+    int numChannels = 4;
+
+    // Print individual pixel values
+    for (int row = 0; row < height; row++) {
+        for (int col = 0; col < width; col++) {
+            // Calculate pixel index
+            int pixelIndex = (row * width + col) * numChannels;
+
+            // Get RGBA values
+            uint8_t rValue = rgbaData[pixelIndex];
+            uint8_t gValue = rgbaData[pixelIndex + 1];
+            uint8_t bValue = rgbaData[pixelIndex + 2];
+            uint8_t aValue = rgbaData[pixelIndex + 3];
+
+            // Print pixel values (RGBA)
+            std::cout << "Pixel (" << row << ", " << col << "): "
+                      << "R=" << static_cast<int>(rValue) << " "
+                      << "G=" << static_cast<int>(gValue) << " "
+                      << "B=" << static_cast<int>(bValue) << " "
+                      << "A=" << static_cast<int>(aValue)
+                      << std::endl;
+        }
+    }
+}
+
 void saveBytesToFile(const uint8_t* bytes, size_t size, const std::string& filePath)
 {
     std::ofstream outFile(filePath, std::ios::binary);

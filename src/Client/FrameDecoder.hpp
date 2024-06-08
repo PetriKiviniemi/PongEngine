@@ -8,6 +8,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <common.hpp>
+#include <stb_image_write.h>
 
 // Singleton wrapper for decoding frames
 class FrameDecoder {
@@ -48,6 +49,8 @@ class FrameDecoder {
 
         void addFrameToQueue(AVFrame* frame);
         AVFrame* getFrameFromQueue();
+
+        void saveFrametoPng(AVFrame* frame);
 };
 
 #endif

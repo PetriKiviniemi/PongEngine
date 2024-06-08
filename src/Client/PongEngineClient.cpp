@@ -30,7 +30,7 @@ int main()
         {
             //We are receiving YUV420 pixel format frames, so we have to convert
             Image image = {
-                .data = reinterpret_cast<Color*>(frame->data[0]),
+                .data = frame->data[0],
                 .width = frame->width,
                 .height = frame->height,
                 .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
@@ -38,8 +38,8 @@ int main()
             Texture2D texture = LoadTextureFromImage(image);
             DrawTexture(texture, 0, 0, WHITE);
 
-            delete frame;
-            //UnloadTexture(texture);
+            UnloadTexture(texture);
+            av_frame_free(&frame);
         }
         EndDrawing();
     }

@@ -137,14 +137,14 @@ int FrameEncoder::prepare_video_encoder()
     encoder->video_codec_context->width = WINDOW_WIDTH;
     encoder->video_codec_context->height = WINDOW_HEIGHT;
     encoder->video_codec_context->bit_rate = 1000000; // Bitrate
-    encoder->video_codec_context->time_base = {1, encoder->frame_rate};
+    encoder->video_codec_context->time_base = {1, 25};
     encoder->video_codec_context->gop_size = 10;
     //Lets not use B Frames for the stream
-    //encoder->video_codec_context->max_b_frames = 0;
+    //encoder->video_codec_context->max_b_frames = 1;
 
     // Set codec profile and level
-    encoder->video_codec_context->profile = FF_PROFILE_MPEG4_MAIN;
-    encoder->video_codec_context->level = 4;
+    //encoder->video_codec_context->profile = FF_PROFILE_MPEG4_MAIN;
+    //encoder->video_codec_context->level = 4;
 
     if (encoder->video_format_ctx->oformat->flags & AVFMT_GLOBALHEADER)
         encoder->video_format_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;

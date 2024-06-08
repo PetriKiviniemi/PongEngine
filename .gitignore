@@ -8,3 +8,4 @@ PongEngineClient
 cmake_install.cmake
 *.mp4
 build
+TempFrameData

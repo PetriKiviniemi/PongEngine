@@ -60,14 +60,15 @@ void PongEngineUDPClient::receiveMessages()
         // If all fragments are received, add to the FrameDecoder queue
         if (udpHeader.fragmentNumber == udpHeader.totalFragments - 1)
         {
-            //Lets store the first 20 frames into a file
-            if (udpHeader.frameNumber < 20)
-            {
-                std::string fileName = "./TempFrameData/Client_Frame";
-                fileName += std::to_string(udpHeader.frameNumber);
-                fileName += ".txt";
-                saveBytesToFile(pkt->payload.data(), pkt->payload.size(), fileName.c_str());
-            }
+            //If we would like to compare the frames
+           // //Lets store the first 20 frames into a file
+           // if (udpHeader.frameNumber < 20)
+           // {
+           //     std::string fileName = "./TempFrameData/Client_Frame";
+           //     fileName += std::to_string(udpHeader.frameNumber);
+           //     fileName += ".txt";
+           //     saveBytesToFile(pkt->payload.data(), pkt->payload.size(), fileName.c_str());
+           // }
 
             if(pkt->payload.size() != udpHeader.totalSize)
                 printf("Size missmatch. Fragment lost?\n");
