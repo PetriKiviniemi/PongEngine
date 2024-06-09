@@ -70,8 +70,8 @@ int FrameDecoder::prepareDecoder()
     decoder->video_codec_context->bit_rate = 1000000; // Bitrate
     decoder->video_codec_context->width = WINDOW_WIDTH;
     decoder->video_codec_context->height = WINDOW_HEIGHT;
-    decoder->video_codec_context->time_base = { 1, 30 };
-    decoder->video_codec_context->framerate = { 30, 1 };
+    decoder->video_codec_context->time_base = { 1, 60 };
+    decoder->video_codec_context->framerate = { 60, 1 };
     decoder->video_codec_context->gop_size = 10;
     decoder->video_codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
 
@@ -156,6 +156,10 @@ ReconstructedPacket* FrameDecoder::getRawPacketFromQueue()
 
 void FrameDecoder::addRawDataToQueue(ReconstructedPacket* rpkt)
 {
+    // NOTE:: We are limiting the received frames here
+    // This can cause artificial "packet loss", but stops the buffer
+    // from overflowing
+    if(rawDataQueue.size() < 10)
     {
         std::lock_guard<std::mutex> lock(queue_mtx);
         rawDataQueue.push(rpkt);
@@ -165,6 +169,7 @@ void FrameDecoder::addRawDataToQueue(ReconstructedPacket* rpkt)
 
 void FrameDecoder::addFrameToQueue(AVFrame* frame)
 {
+    if(decodedFramesQueue.size() < 10)
     {
         std::lock_guard<std::mutex> lock(frame_queue_mtx);
         decodedFramesQueue.push(frame);

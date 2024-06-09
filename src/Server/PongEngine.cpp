@@ -15,12 +15,13 @@
 #include <UserInputQueue.hpp>
 #include <PongEngineUDPClient.hpp>
 
-#define MAX_SCORE 1
+#define MAX_SCORE 3 
 
 typedef struct Pad{
     Vector2 pos;
     int w,h;
     Color color;
+    Vector2 dir; 
 };
 
 typedef struct Ball{
@@ -56,19 +57,29 @@ Vector2 calculateHorReflection(Vector2 dir)
     float dotP = Vector2DotProduct(dir, wallN);
     //Prevet the ball from going straight up or down
     if(dotP > 0.92)
-        dotP -= 0.05;
+        dotP -= 0.1;
     else if(dotP < -0.92)
-        dotP += 0.05;
-    return Vector2Subtract(dir, Vector2Scale(wallN, (2 * dotP)));
+        dotP += 0.1;
+    Vector2 reflection = Vector2Subtract(dir, Vector2Scale(wallN, (2 * dotP)));
+
+    reflection = Vector2Normalize(reflection);
+    reflection = Vector2Scale(reflection, Vector2Length(dir));
+
+    return reflection;
 }
 
-Vector2 calculateVerReflection(Vector2 dir)
+Vector2 calculateVerReflection(Vector2 dir, const Pad& pad)
 {
-    //TODO:: We could add the velocity of the wall here
-    //So that we can bounce the ball in steeper angle when the wall is moving
-    Vector2 wallN{1.0, 0.0};
+    Vector2 wallN = {1.0f, 0.0f};
+
     float dotP = Vector2DotProduct(dir, wallN);
-    return Vector2Subtract(dir, Vector2Scale(wallN, (2 * dotP)));
+    Vector2 reflection = Vector2Subtract(dir, Vector2Scale(wallN, (2 * dotP)));
+
+    // We take the pad direction into account when calculating the ball reflection
+    reflection = Vector2Add(reflection, Vector2Scale(pad.dir, 0.5f));
+    reflection = Vector2Normalize(reflection);
+
+    return reflection;
 }
 
 Vector2 getRandomBallDir()
@@ -95,8 +106,8 @@ enum GameState{
 int main()
 {
     //Lets make pong
-    InitWindow(WINDOW_HEIGHT, WINDOW_WIDTH, "Pong");
-    SetTargetFPS(30);
+    InitWindow(WINDOW_HEIGHT, WINDOW_WIDTH, "PongEngine");
+    SetTargetFPS(60);
 
     //Random starting direction for ball
     srand(time(NULL));
@@ -135,6 +146,7 @@ int main()
         {
             state = GAMEOVER;
         }
+
         //Event handling
         if(state == MENU)
         {
@@ -172,20 +184,24 @@ int main()
                 if(player.pos.y < WINDOW_HEIGHT - player.h / 2)
                 {
                     player.pos.y += 4;
+                    player.dir = Vector2{0.0f, 1.0f};
                 }
             }
-
-            if(key == KEY_W)
+            else if(key == KEY_W)
             {
                 if(player.pos.y > 0 + player.h / 2)
                 {
                     player.pos.y -= 4;
+                    player.dir = Vector2{0.0f, -1.0f};
                 }
             }
-
-            if(key == KEY_ESCAPE)
+            else if(key == KEY_ESCAPE)
             {
                 break;
+            }
+            else
+            {
+                player.dir = Vector2{0.0f, 0.0f};
             }
 
             //Update positions
@@ -213,14 +229,14 @@ int main()
             //Have to make a collision box for the pads
             if(checkCollision(player, ball))
             {
-                ball.dir = calculateVerReflection(ball.dir);
+                ball.dir = calculateVerReflection(ball.dir, player);
                 //Add a small offset
                 ball.pos.x += 4;
             }
 
             if(checkCollision(computer, ball))
             {
-                ball.dir = calculateVerReflection(ball.dir);
+                ball.dir = calculateVerReflection(ball.dir, computer);
                 //Add a small offset
                 ball.pos.x -= 4;
             }
@@ -231,11 +247,16 @@ int main()
             if (computer.pos.y > ball.pos.y)
             {
                 computer.pos.y -= 1;
+                computer.dir = Vector2{0.0f, -1.0f};
             }
-
             else if(computer.pos.y < ball.pos.y)
             {
                 computer.pos.y += 1;
+                computer.dir = Vector2{0.0f, 1.0f};
+            }
+            else
+            {
+                computer.dir = Vector2{0.0f, 0.0f};
             }
         }
         else if(state == GAMEOVER)

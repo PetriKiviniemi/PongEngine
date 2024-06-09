@@ -1,8 +1,9 @@
 #include "UserInputQueue.hpp"
+#include <iostream>
+#include <stdio.h>
 
 UserInputQueue* UserInputQueue::pinstance_{nullptr};
 std::mutex UserInputQueue::mutex_;
-
 
 UserInputQueue *UserInputQueue::GetInstance()
 {
@@ -14,11 +15,15 @@ UserInputQueue *UserInputQueue::GetInstance()
     return pinstance_;
 }
 
-
 void UserInputQueue::addKeyPressToQueue(KeyboardKey key)
 {
-    //Limit the keystroke buffer
-    if(keystroke_queue.size() < 10)
+    // Limit the keystroke buffer
+    // NOTE:: We have a problem where the keystrokes are very laggy
+    // And only sending one is not good enough, this is probably due to the
+    // performance bottleneck from using mutexes
+    // Now we sent continuous input from client and rate limit it to 8 inputs
+    // This is hacky solution but works for now
+    if(keystroke_queue.size() < 8)
     {
         std::lock_guard<std::mutex> lock(queue_mtx);
         keystroke_queue.push(key);
