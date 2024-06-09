@@ -12,7 +12,6 @@
 #include <sstream>
 #include <iomanip>
 #include <cstdio>
-#include <UDPSend6.h>
 #include <chrono>
 #include <algorithm>
 #include <cstring>
@@ -29,11 +28,12 @@ class PongEngineUDPClient{
 		int UDP_PORT = 9090;
         bool is_receiving = false;
         UDPReceive6 receiver;
-		std::thread udp_client_thread;
-        void receiveMessages();
+        std::vector<std::thread> udp_client_threads;
+        void receiveFrameMessages();
+        void receiveInputMessages();
     protected:
         PongEngineUDPClient() {
-            receiver.init(9090);
+            receiver.init(UDP_PORT);
             is_receiving = true;
         };
         ~PongEngineUDPClient() {
@@ -44,14 +44,30 @@ class PongEngineUDPClient{
         void operator=(const PongEngineUDPClient &) = delete;
         static PongEngineUDPClient *GetInstance();
 
-		void runClient() {
-			udp_client_thread = std::thread(&PongEngineUDPClient::receiveMessages, this);
+        // Remember to call restartClient if you change the port
+        void setClientPort(int port) { UDP_PORT = port;};
+        void restartClient() {
+            closeClient();
+            receiver.init(UDP_PORT);
+            is_receiving = true;
+        }
+
+		void runVideoStreamClient() {
+			udp_client_threads.push_back(std::thread(&PongEngineUDPClient::receiveFrameMessages, this));
         };
+
+        void runInputClient(){
+			udp_client_threads.push_back(std::thread(&PongEngineUDPClient::receiveInputMessages, this));
+        }
+
 		void closeClient() {
 			if (is_receiving)
 			{
 				is_receiving = false;
-				udp_client_thread.join();
+                for(int i = 0; i < udp_client_threads.size(); i++)
+                {
+                    udp_client_threads[i].join();
+                }
                 receiver.closeSock();
 			}
         };

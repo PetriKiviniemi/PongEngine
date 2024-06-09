@@ -137,7 +137,7 @@ int FrameEncoder::prepare_video_encoder()
     encoder->video_codec_context->width = WINDOW_WIDTH;
     encoder->video_codec_context->height = WINDOW_HEIGHT;
     encoder->video_codec_context->bit_rate = 1000000; // Bitrate
-    encoder->video_codec_context->time_base = {1, 60};
+    encoder->video_codec_context->time_base = {1, 30};
     encoder->video_codec_context->gop_size = 10;
     //Lets not use B Frames for the stream
 
@@ -149,7 +149,7 @@ int FrameEncoder::prepare_video_encoder()
         encoder->video_format_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
     // For streaming in web, optimizing file structure with metadata on top
-    // av_dict_set(&encoder->muxer_opts, "movflags", "faststart", 0);
+    //av_dict_set(&encoder->muxer_opts, "movflags", "faststart", 0);
 
     // Try to open codec after changes
     // copy codec_context params to videostream

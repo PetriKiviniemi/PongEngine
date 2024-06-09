@@ -22,19 +22,35 @@ include_directories(
 add_executable(
     PongEngineServer
     src/Server/PongEngine.cpp 
-    src/Server/FrameEncoder.cpp 
+
     src/Server/PongEngineServer.cpp
+    src/Client/PongEngineUDPClient.cpp
+
+    src/Client/UDPReceive6.cpp
     src/Server/UDPSend6.cpp
+
+    src/Server/FrameEncoder.cpp 
+    src/Client/FrameDecoder.cpp
+
     src/common.cpp 
+    src/UserInputQueue.cpp
 )
 
 add_executable(
     PongEngineClient
     src/Client/PongEngineClient.cpp
+
+    src/Server/PongEngineServer.cpp
     src/Client/PongEngineUDPClient.cpp
-    src/Client/FrameDecoder.cpp
+
     src/Client/UDPReceive6.cpp
+    src/Server/UDPSend6.cpp
+
+    src/Server/FrameEncoder.cpp 
+    src/Client/FrameDecoder.cpp
+
     src/common.cpp 
+    src/UserInputQueue.cpp
 )
  
 #Link stuff

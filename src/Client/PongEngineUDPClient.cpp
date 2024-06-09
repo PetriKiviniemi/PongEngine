@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <map>
 #include <FrameDecoder.hpp>
+#include <raylib.h>
+#include <UserInputQueue.hpp>
 
 PongEngineUDPClient* PongEngineUDPClient::pinstance_{nullptr};
 std::mutex PongEngineUDPClient::mutex_;
@@ -16,7 +18,7 @@ PongEngineUDPClient *PongEngineUDPClient::GetInstance()
     return pinstance_;
 }
 
-void PongEngineUDPClient::receiveMessages()
+void PongEngineUDPClient::receiveFrameMessages()
 {
     std::map<uint32_t, ReconstructedPacket*> reconstructedPackets;
 
@@ -27,7 +29,6 @@ void PongEngineUDPClient::receiveMessages()
         char buf[buf_size];
         double ptime;
         auto ret_code = receiver.receive(buf, buf_size, &ptime);
-
 
         if (ret_code < 0)
         {
@@ -85,4 +86,27 @@ void PongEngineUDPClient::receiveMessages()
     }
 
     reconstructedPackets.clear();
+}
+
+void PongEngineUDPClient::receiveInputMessages()
+{
+    while (is_receiving)
+    {
+        // Buffer to receive data
+        const size_t buf_size = sizeof(KeyboardKey);
+        char buf[buf_size];
+        double ptime;
+        auto ret_code = receiver.receive(buf, buf_size, &ptime);
+
+        if (ret_code < 0)
+        {
+            std::cerr << "Failed to receive bytes!" << std::endl;
+            continue;
+        }
+
+        // Copy UDP header from buffer
+        KeyboardKey keyPressed;
+        std::memcpy(&keyPressed, buf, sizeof(KeyboardKey));
+        UserInputQueue::GetInstance()->addKeyPressToQueue(keyPressed);
+    }
 }

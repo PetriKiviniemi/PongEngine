@@ -11,6 +11,9 @@
 #include <FrameEncoder.hpp>
 #include <GL/gl.h>
 #include <common.hpp>
+#include "PongEngineServer.hpp"
+#include <UserInputQueue.hpp>
+#include <PongEngineUDPClient.hpp>
 
 #define MAX_SCORE 1
 
@@ -112,36 +115,43 @@ int main()
     std::vector<std::string> menuElements{"Start", "Quit"};
     int selectedMenuElemIdx = 0;
 
+    PongEngineUDPServer* server = PongEngineUDPServer::GetInstance();
+    server->setAddrAndPort("localhost", 9090);
+    server->restartServer();
+
     FrameEncoder* frameEncoder = FrameEncoder::GetInstance();
     RenderTexture2D target = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    // For the user input
+    PongEngineUDPClient* client = PongEngineUDPClient::GetInstance();
+    client->setClientPort(9091);
+    client->restartClient();
+    client->runInputClient();
+    UserInputQueue* userInputQueue = UserInputQueue::GetInstance();
 
     while(WindowShouldClose() == false)
     {
         if(playerScore == MAX_SCORE || computerScore == MAX_SCORE)
         {
-            playerScore = 0;
-            computerScore = 0;
             state = GAMEOVER;
         }
         //Event handling
         if(state == MENU)
         {
-            if(IsKeyPressed(KEY_W))
+            KeyboardKey key = userInputQueue->getKeyPressFromQueue();
+            if(key == KEY_W)
             {
                 selectedMenuElemIdx += 1;
                 if (selectedMenuElemIdx >= menuElements.size())
                     selectedMenuElemIdx = 0;
-
             }
-
-            if(IsKeyPressed(KEY_S))
+            else if(key == KEY_S)
             {
                 selectedMenuElemIdx -= 1;
                 if (selectedMenuElemIdx < 0)
                     selectedMenuElemIdx = menuElements.size() - 1;
             }
-
-            if(IsKeyPressed(KEY_ENTER))
+            else if(key == KEY_ENTER)
             {
                 if(menuElements[selectedMenuElemIdx] == "Start")
                 {
@@ -152,12 +162,12 @@ int main()
                 {
                     break;
                 }
-
             }
         }
         else if (state == PLAYING)
         {
-            if(IsKeyDown(KEY_S))
+            KeyboardKey key = userInputQueue->getKeyPressFromQueue();
+            if(key == KEY_S)
             {
                 if(player.pos.y < WINDOW_HEIGHT - player.h / 2)
                 {
@@ -165,7 +175,7 @@ int main()
                 }
             }
 
-            if(IsKeyDown(KEY_W))
+            if(key == KEY_W)
             {
                 if(player.pos.y > 0 + player.h / 2)
                 {
@@ -173,7 +183,7 @@ int main()
                 }
             }
 
-            if(IsKeyPressed(KEY_ESCAPE))
+            if(key == KEY_ESCAPE)
             {
                 break;
             }
@@ -230,9 +240,12 @@ int main()
         }
         else if(state == GAMEOVER)
         {
-            if(IsKeyPressed(KEY_ENTER))
+            KeyboardKey key = userInputQueue->getKeyPressFromQueue();
+            if(key == KEY_ENTER)
             {
                 state = MENU;
+                playerScore = 0;
+                computerScore = 0;
             }
         }
 
@@ -307,14 +320,10 @@ int main()
 
         flipPixelsVertically(pixelData, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-        // We have to do some rate limiting here, 
-        // since the server is not fast enough to process all the frames
-
         frameEncoder->encodeAndAddToQueue(pixelData, textureSize);
         delete[] pixelData;
 
         EndDrawing();
-
     }
 
     frameEncoder->cleanUp();

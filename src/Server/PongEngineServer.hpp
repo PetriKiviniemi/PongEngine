@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <raylib.h>
 #include <common.hpp>
 
 
@@ -30,16 +31,24 @@ class PongEngineUDPServer{
         char* addr = "localhost";
 		UDPSend6 udp_sender;
     protected:
-        PongEngineUDPServer() {runServer();};
-        ~PongEngineUDPServer() {closeServer();};
+        PongEngineUDPServer() { runServer();};
+        ~PongEngineUDPServer() { closeServer();};
     public:
         PongEngineUDPServer(PongEngineUDPServer &other) = delete;
         void operator=(const PongEngineUDPServer &) = delete;
         static PongEngineUDPServer *GetInstance();
 
+        void setAddrAndPort(char* address, int port) { UDP_PORT = port; addr = address;};
+
 		void runServer();
 		void closeServer();
+        void restartServer() {closeServer(); runServer();};
+
+        //This is the function for sending the FFMPEG packets
 		void fragmentAndSendPacket(AVPacket *pkt, int frame_index);
+
+        //This is for sending user input
+        void sendUserInput(KeyboardKey key);
 };
 
 #endif

@@ -1,6 +1,5 @@
 #include <FrameDecoder.hpp>
 
-
 FrameDecoder* FrameDecoder::pinstance_{nullptr};
 std::mutex FrameDecoder::mutex_;
 
@@ -71,8 +70,8 @@ int FrameDecoder::prepareDecoder()
     decoder->video_codec_context->bit_rate = 1000000; // Bitrate
     decoder->video_codec_context->width = WINDOW_WIDTH;
     decoder->video_codec_context->height = WINDOW_HEIGHT;
-    decoder->video_codec_context->time_base = { 1, 60 };
-    decoder->video_codec_context->framerate = { 60, 1 };
+    decoder->video_codec_context->time_base = { 1, 30 };
+    decoder->video_codec_context->framerate = { 30, 1 };
     decoder->video_codec_context->gop_size = 10;
     decoder->video_codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
 
@@ -220,7 +219,6 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
         //TODO:: This is the problematic code
         if(frame)
         {
-            printf("Frame decoded, converting and sending...\n");
             // Create a dummy RGB Frame for conversion
             AVFrame* rgbFrame = av_frame_alloc();
             if (!rgbFrame) {

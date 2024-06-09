@@ -71,7 +71,14 @@ void PongEngineUDPServer::fragmentAndSendPacket(AVPacket *pkt, int frame_index)
 
         // Free the buffer memory
         delete[] charBuff;
-
-        // TODO: Sync to framerate (25-30fps)
     }
+}
+
+void PongEngineUDPServer::sendUserInput(KeyboardKey key)
+{
+    // TODO:: We could create some custom header for this to differentiate from frame messages
+    char* charBuff = new char[sizeof(KeyboardKey)];
+    std::memcpy(charBuff, &key, sizeof(KeyboardKey));
+    udp_sender.send(charBuff, sizeof(KeyboardKey));
+    delete[] charBuff;
 }
