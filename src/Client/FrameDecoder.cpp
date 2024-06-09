@@ -71,8 +71,8 @@ int FrameDecoder::prepareDecoder()
     decoder->video_codec_context->bit_rate = 1000000; // Bitrate
     decoder->video_codec_context->width = WINDOW_WIDTH;
     decoder->video_codec_context->height = WINDOW_HEIGHT;
-    decoder->video_codec_context->time_base = { 1, 25 };
-    decoder->video_codec_context->framerate = { 25, 1 };
+    decoder->video_codec_context->time_base = { 1, 60 };
+    decoder->video_codec_context->framerate = { 60, 1 };
     decoder->video_codec_context->gop_size = 10;
     decoder->video_codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
 
@@ -242,7 +242,7 @@ int FrameDecoder::decodeFrame(AVPacket* pkt)
                 return -1;
             }
 
-            convertYUV420PtoRGB(frame, rgbFrame);
+            convertFramePxFMT(frame, rgbFrame, AV_PIX_FMT_YUV420P, AV_PIX_FMT_RGBA);
             addFrameToQueue(rgbFrame);
         }
     }

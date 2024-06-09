@@ -4,6 +4,7 @@
 #include <PongEngineUDPClient.hpp>
 #include <FrameDecoder.hpp>
 #include <common.hpp>
+#include <raymath.h>
 
 int main()
 {
@@ -40,18 +41,31 @@ int main()
             // TODO:: Somehow this does not work, yet the frames are saved to png succesfully
             // It could be about saveFramePng converting the frame again
             // with SwsContext and sws_scale
+
             Image image = {
                 .data = frame->data[0],
                 .width = frame->width,
                 .height = frame->height,
-                .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
+                .mipmaps = 1,
+                .format = PIXELFORMAT_UNCOMPRESSED_R8G8B8A8,
             };
+
+            // Check if LoadTextureFromImage returns a valid texture
             texture = LoadTextureFromImage(image);
 
-            DrawTexture(texture, 0, 0, WHITE);
-
-            av_frame_free(&frame);
         }
+
+        int posX = (WINDOW_WIDTH - texture.width) / 2;
+        int posY = (WINDOW_HEIGHT - texture.height) / 2;
+
+        DrawTexturePro(texture,
+                    (Rectangle){0, 0, texture.width, texture.height},
+                    (Rectangle){posX, posY, texture.width, texture.height},
+                    Vector2Zero(),
+                    0.0f,
+                    WHITE);
+
+        av_frame_free(&frame);
         EndDrawing();
     }
 
